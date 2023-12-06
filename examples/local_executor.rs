@@ -5,7 +5,6 @@ use smol_macros::{main, LocalExecutor};
 use std::time::Duration;
 
 #[apply(main!)]
-#[local]
 async fn main(ex: &LocalExecutor<'_>) {
     let mut tasks = vec![];
     for i in 0..16 {

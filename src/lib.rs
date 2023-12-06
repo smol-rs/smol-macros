@@ -20,51 +20,25 @@ macro_rules! main {
     };
 
     (
-        #[local]
         $(#[$post_attr:meta])*
-        async fn $name:ident ($ex:ident : $exty:ty)
+        async fn $name:ident ($ex:ident : & $exty:ty)
         $(-> $ret:ty)? $bl:block
     ) => {
         $(#[$post_attr])*
         fn $name () $(-> $ret)? {
-            // Eat the type name.
-            fn __eat_the_type_name(_: $exty) {}
-
-            let ex = $crate::__private::Rc::new($crate::LocalExecutor::new());
-            let ex = &ex;
-            $crate::__private::block_on(ex.run(async move {
-                let $ex = ex;
-                $bl
-            }))
-        }
-    };
-
-    (
-        $(#[$attr:meta])*
-        async fn $name:ident ($ex:ident : $exty:ty)
-        $(-> $ret:ty)? $bl:block
-    ) => {
-        $(#[$attr])*
-        fn $name () $(-> $ret)? {
-            // Eat the type name.
-            fn __eat_the_type_name(_: $exty) {}
-
-            $crate::__private::run_executor(|ex| {
-                let ex = &ex;
+            <$exty as $crate::__private::MainExecutor>::with_main(|ex| {
                 $crate::__private::block_on(ex.run(async move {
                     let $ex = ex;
                     $bl
                 }))
             })
         }
-    };
+    }
 }
 
 #[macro_export]
 macro_rules! test {
-    () => {
-        
-    };
+    () => {};
 }
 
 #[doc(hidden)]
@@ -72,16 +46,51 @@ pub mod __private {
     pub use async_io::block_on;
     pub use std::rc::Rc;
 
-    use crate::Executor;
+    use crate::{Executor, LocalExecutor};
     use event_listener::{Event, EventListener};
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
     use std::thread;
 
-    /// Run a closure with the executor.
+    /// Something that can be set up as an executor.
+    #[doc(hidden)]
+    pub trait MainExecutor: Sized {
+        /// Create this type and pass it into `main`.
+        fn with_main<T, F: FnOnce(&Self) -> T>(f: F) -> T;
+    }
+
+    impl MainExecutor for Arc<Executor<'_>> {
+        #[inline]
+        fn with_main<T, F: FnOnce(&Self) -> T>(f: F) -> T {
+            let ex = Arc::new(Executor::new());
+            with_thread_pool(&ex, || f(&ex))
+        }
+    }
+
+    impl MainExecutor for Executor<'_> {
+        #[inline]
+        fn with_main<T, F: FnOnce(&Self) -> T>(f: F) -> T {
+            let ex = Executor::new();
+            with_thread_pool(&ex, || f(&ex))
+        }
+    }
+
+    impl MainExecutor for Rc<LocalExecutor<'_>> {
+        #[inline]
+        fn with_main<T, F: FnOnce(&Self) -> T>(f: F) -> T {
+            f(&Rc::new(LocalExecutor::new()))
+        }
+    }
+
+    impl MainExecutor for LocalExecutor<'_> {
+        fn with_main<T, F: FnOnce(&Self) -> T>(f: F) -> T {
+            f(&LocalExecutor::new())
+        }
+    }
+
+    /// Run a function that takes an `Executor` inside of a thread pool.
     #[inline]
-    pub fn run_executor<T>(f: impl FnOnce(&Arc<Executor<'static>>) -> T) -> T {
-        let ex = Arc::new(Executor::new());
+    fn with_thread_pool<T>(ex: &Executor<'_>, f: impl FnOnce() -> T) -> T {
         let stopper = WaitForStop::new();
 
         // Create a thread for each CPU.
@@ -99,7 +108,7 @@ pub mod __private {
                     .expect("failed to spawn thread");
             }
 
-            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| f(&ex)));
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
 
             stopper.stop();
 
