@@ -316,7 +316,7 @@ pub mod __private {
         /// Wait for the event to stop.
         #[inline]
         async fn wait(&self) {
-            let listener = EventListener::new(&self.events);
+            let listener = EventListener::new();
             futures_lite::pin!(listener);
 
             loop {
@@ -327,7 +327,7 @@ pub mod __private {
                 if listener.is_listening() {
                     listener.as_mut().await;
                 } else {
-                    listener.as_mut().listen();
+                    listener.as_mut().listen(&self.events);
                 }
             }
         }
