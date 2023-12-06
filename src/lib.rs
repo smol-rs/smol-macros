@@ -33,6 +33,20 @@ macro_rules! main {
                 }))
             })
         }
+    };
+
+    (
+        $(#[$post_attr:meta])*
+        async fn $name:ident ($ex:ident : $exty:ty)
+        $(-> $ret:ty)? $bl:block
+    ) => {
+        $crate::main! {
+            $(#[$post_attr])*
+            async fn $name(ex: &$exty) $(-> $ret)? {
+                let $ex = ex.clone();
+                $bl
+            }
+        }
     }
 }
 
