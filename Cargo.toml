@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.63"
 authors = ["John Nunley <dev@notgull.net>"]
+description = "Macros for setting up a smol runtime"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/smol-rs/smol-macros"
+keywords = ["async", "await", "future", "io", "macro", "networking"]
+categories = ["asynchronous", "concurrency", "network-programming"]
+exclude = ["/.*"]
 
 [dependencies]
 async-executor = "1.6.0"
