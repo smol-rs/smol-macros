@@ -52,7 +52,30 @@ macro_rules! main {
 
 #[macro_export]
 macro_rules! test {
-    () => {};
+    // Special case to get around bug in macro engine.
+    (
+        $(#[$post_attr:meta])*
+        async fn $name:ident ($exname:ident : & $exty:ty)
+        $(-> $ret:ty)? $bl:block
+    ) => {
+        $crate::main! {
+            $(#[$post_attr])*
+            #[core::prelude::v1::test]
+            async fn $name($exname: &$exty) $(-> $ret)? $bl
+        }
+    };
+
+    (
+        $(#[$post_attr:meta])*
+        async fn $name:ident ($($pname:ident : $pty:ty),* $(,)?)
+        $(-> $ret:ty)? $bl:block
+    ) => {
+        $crate::main! {
+            $(#[$post_attr])*
+            #[core::prelude::v1::test]
+            async fn $name($($pname: $pty),*) $(-> $ret)? $bl
+        }
+    };
 }
 
 #[doc(hidden)]
