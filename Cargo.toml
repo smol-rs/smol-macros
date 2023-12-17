@@ -7,7 +7,7 @@ authors = ["John Nunley <dev@notgull.net>"]
 description = "Macros for setting up a smol runtime"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/smol-rs/smol-macros"
-keywords = ["async", "await", "future", "io", "macro", "networking"]
+keywords = ["async", "await", "future", "io", "macro"]
 categories = ["asynchronous", "concurrency", "network-programming"]
 exclude = ["/.*"]
 
