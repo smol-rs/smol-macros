@@ -222,7 +222,7 @@ pub mod __private {
     pub use std::rc::Rc;
 
     use crate::{Executor, LocalExecutor};
-    use event_listener::{Event, EventListener};
+    use event_listener::Event;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
     use std::thread;
@@ -316,19 +316,18 @@ pub mod __private {
         /// Wait for the event to stop.
         #[inline]
         async fn wait(&self) {
-            let listener = EventListener::new();
-            futures_lite::pin!(listener);
-
             loop {
+                if self.stopped.load(Ordering::Relaxed) {
+                    return;
+                }
+
+                event_listener::listener!(&self.events => listener);
+
                 if self.stopped.load(Ordering::Acquire) {
                     return;
                 }
 
-                if listener.is_listening() {
-                    listener.as_mut().await;
-                } else {
-                    listener.as_mut().listen(&self.events);
-                }
+                listener.await;
             }
         }
 
