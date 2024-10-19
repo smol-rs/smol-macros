@@ -133,3 +133,9 @@ async fn with_local_rcref(ex: &Rc<LocalExecutor<'_>>) {
         })
         .await;
 }
+
+#[apply(test!)]
+async fn it_works(_ex: &Executor<'_>) -> Result<(), Box<dyn std::error::Error>> {
+    let _ = u32::try_from(20usize)?;
+    Ok(())
+}

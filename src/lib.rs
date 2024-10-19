@@ -335,7 +335,7 @@ pub mod __private {
         #[inline]
         fn stop(&self) {
             self.stopped.store(true, Ordering::SeqCst);
-            self.events.notify_additional(std::usize::MAX);
+            self.events.notify_additional(usize::MAX);
         }
     }
 }
