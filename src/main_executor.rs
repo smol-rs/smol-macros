@@ -1,56 +1,9 @@
-pub use async_io::block_on;
-pub use std::rc::Rc;
-
-use crate::{Executor, LocalExecutor};
-use event_listener::Event;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::rc::Rc;
 use std::sync::Arc;
 use std::thread;
 
-/// Wait for the executor to stop.
-struct WaitForStop {
-    /// Whether or not we need to stop.
-    stopped: AtomicBool,
-
-    /// Wait for the stop.
-    events: Event,
-}
-
-impl WaitForStop {
-    /// Create a new wait for stop.
-    #[inline]
-    fn new() -> Self {
-        Self {
-            stopped: AtomicBool::new(false),
-            events: Event::new(),
-        }
-    }
-
-    /// Wait for the event to stop.
-    #[inline]
-    async fn wait(&self) {
-        loop {
-            if self.stopped.load(Ordering::Relaxed) {
-                return;
-            }
-
-            event_listener::listener!(&self.events => listener);
-
-            if self.stopped.load(Ordering::Acquire) {
-                return;
-            }
-
-            listener.await;
-        }
-    }
-
-    /// Stop the waiter.
-    #[inline]
-    fn stop(&self) {
-        self.stopped.store(true, Ordering::SeqCst);
-        self.events.notify_additional(usize::MAX);
-    }
-}
+use crate::wait_for_stop::WaitForStop;
+use crate::{Executor, LocalExecutor};
 
 /// Something that can be set up as an executor.
 pub trait MainExecutor: Sized {
@@ -102,7 +55,7 @@ fn with_thread_pool<T>(ex: &Executor<'_>, f: impl FnOnce() -> T) -> T {
             thread::Builder::new()
                 .name(format!("smol-macros-{i}"))
                 .spawn_scoped(scope, || {
-                    block_on(ex.run(stopper.wait()));
+                    async_io::block_on(ex.run(stopper.wait()));
                 })
                 .expect("failed to spawn thread");
         }

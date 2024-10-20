@@ -136,7 +136,7 @@ macro_rules! main {
     ) => {
         $(#[$attr])*
         fn $name () $(-> $ret)? {
-            $crate::main_executor::block_on(async {
+            async_io::block_on(async {
                 $bl
             })
         }
@@ -150,7 +150,7 @@ macro_rules! main {
         $(#[$post_attr])*
         fn $name () $(-> $ret)? {
             <$exty as $crate::main_executor::MainExecutor>::with_main(|ex| {
-                $crate::main_executor::block_on(ex.run(async move {
+                async_io::block_on(ex.run(async move {
                     let $ex = ex;
                     $bl
                 }))
@@ -217,3 +217,4 @@ macro_rules! test {
 }
 
 pub mod main_executor;
+pub mod wait_for_stop;
