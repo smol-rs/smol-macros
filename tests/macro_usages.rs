@@ -79,7 +79,7 @@ async fn with_executor_arcref(ex: &Arc<Executor<'static>>) {
 
 #[apply(test!)]
 async fn with_local(ex: &LocalExecutor<'_>) {
-    let barrier = Rc::new(unsend::lock::Barrier::new(2));
+    let barrier = Rc::new(async_lock::Barrier::new(2));
     ex.spawn({
         let barrier = barrier.clone();
         async move {
@@ -98,7 +98,7 @@ async fn with_local(ex: &LocalExecutor<'_>) {
 
 #[apply(test!)]
 async fn with_local_rc(ex: Rc<LocalExecutor<'_>>) {
-    let barrier = Rc::new(unsend::lock::Barrier::new(2));
+    let barrier = Rc::new(async_lock::Barrier::new(2));
     ex.spawn({
         let barrier = barrier.clone();
         async move {
@@ -117,7 +117,7 @@ async fn with_local_rc(ex: Rc<LocalExecutor<'_>>) {
 
 #[apply(test!)]
 async fn with_local_rcref(ex: &Rc<LocalExecutor<'_>>) {
-    let barrier = Rc::new(unsend::lock::Barrier::new(2));
+    let barrier = Rc::new(async_lock::Barrier::new(2));
     ex.spawn({
         let barrier = barrier.clone();
         async move {
